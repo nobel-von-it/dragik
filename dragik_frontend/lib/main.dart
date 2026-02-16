@@ -16,14 +16,17 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   ThemeMode _themeMode = ThemeMode.system;
+  double _fontSize = 18.0;
 
-  void _changeTheme(bool? isDark) {
+  void _changeTheme(ThemeMode mode) {
     setState(() {
-      _themeMode = switch (isDark) {
-        true => ThemeMode.dark,
-        false => ThemeMode.light,
-        null => ThemeMode.system,
-      };
+      _themeMode = mode;
+    });
+  }
+
+  void _changeFontSize(double size) {
+    setState(() {
+      _fontSize = size;
     });
   }
 
@@ -35,21 +38,105 @@ class _MyAppState extends State<MyApp> {
       themeMode: _themeMode,
       theme: ThemeData.light(),
       darkTheme: ThemeData.dark(),
-      home: MyHomePage(onThemeChanged: _changeTheme),
+      home: MyHomePage(
+        currentThemeMode: _themeMode,
+        currentFontSize: _fontSize,
+        onThemeChanged: _changeTheme,
+        onFontSizeChanged: _changeFontSize,
+      ),
+    );
+  }
+}
+
+class MySettingsPage extends StatelessWidget {
+  final ThemeMode currentThemeMode;
+  final double currentFontSize;
+  final Function(ThemeMode) onThemeChanged;
+  final Function(double) onFontSizeChanged;
+
+  const MySettingsPage({
+    super.key,
+    required this.currentThemeMode,
+    required this.currentFontSize,
+    required this.onThemeChanged,
+    required this.onFontSizeChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Settings')),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          const Text('Тема', style: TextStyle(fontWeight: FontWeight.bold)),
+          ListTile(
+            title: const Text('Выбор темы'),
+            trailing: DropdownButton(
+              value: currentThemeMode,
+              onChanged: (val) {
+                if (val != null) onThemeChanged(val);
+              },
+              items: const [
+                DropdownMenuItem(
+                  value: ThemeMode.light,
+                  child: Text('Светлая'),
+                ),
+                DropdownMenuItem(value: ThemeMode.dark, child: Text('Темная')),
+                DropdownMenuItem(
+                  value: ThemeMode.system,
+                  child: Text('Системная'),
+                ),
+              ],
+            ),
+          ),
+          const Divider(),
+          const Text(
+            'Размер шрифта',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          Row(
+            children: [
+              const Icon(Icons.text_fields, size: 16),
+              Expanded(
+                child: Slider(
+                  value: currentFontSize,
+                  min: 12,
+                  max: 40,
+                  divisions: 14,
+                  label: currentFontSize.round().toString(),
+                  onChanged: onFontSizeChanged,
+                ),
+              ),
+              const Icon(Icons.text_fields, size: 30),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
-  final Function(bool?) onThemeChanged;
-  const MyHomePage({super.key, required this.onThemeChanged});
+  final ThemeMode currentThemeMode;
+  final double currentFontSize;
+  final Function(ThemeMode) onThemeChanged;
+  final Function(double) onFontSizeChanged;
+
+  const MyHomePage({
+    super.key,
+    required this.currentThemeMode,
+    required this.currentFontSize,
+    required this.onThemeChanged,
+    required this.onFontSizeChanged,
+  });
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  ScrollController _scrollController = ScrollController();
+  final ScrollController _scrollController = ScrollController();
 
   List<Book> _books = [];
   ContentItem? _currentTitle;
@@ -110,14 +197,30 @@ class _MyHomePageState extends State<MyHomePage> {
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: const Text('Аркадий ДРАГОМОЩЕНКО'),
         actions: [
-          PopupMenuButton(
-            onSelected: widget.onThemeChanged,
-            itemBuilder: (context) => [
-              const PopupMenuItem(value: true, child: Text('Dark')),
-              const PopupMenuItem(value: false, child: Text('Light')),
-              const PopupMenuItem(value: null, child: Text('System')),
-            ],
+          IconButton(
+            icon: Icon(Icons.settings),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => MySettingsPage(
+                    currentThemeMode: widget.currentThemeMode,
+                    currentFontSize: widget.currentFontSize,
+                    onThemeChanged: widget.onThemeChanged,
+                    onFontSizeChanged: widget.onFontSizeChanged,
+                  ),
+                ),
+              );
+            },
           ),
+          // PopupMenuButton(
+          //   onSelected: widget.onThemeChanged,
+          //   itemBuilder: (context) => [
+          //     const PopupMenuItem(value: true, child: Text('Dark')),
+          //     const PopupMenuItem(value: false, child: Text('Light')),
+          //     const PopupMenuItem(value: null, child: Text('System')),
+          //   ],
+          // ),
         ],
       ),
       drawer: Drawer(
@@ -130,14 +233,20 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       body: Center(
         child: _currentTitle == null
-            ? Text('PICK SOME TITLE', style: TextStyle(fontSize: 36))
+            ? Text(
+                'PICK SOME TITLE',
+                style: TextStyle(fontSize: widget.currentFontSize * 2),
+              )
             : SingleChildScrollView(
                 controller: _scrollController,
                 child: Padding(
                   padding: EdgeInsets.all(16.0),
                   child: Text(
                     _currentTitle!.text,
-                    style: TextStyle(fontSize: 18, height: 1.5),
+                    style: TextStyle(
+                      fontSize: widget.currentFontSize,
+                      height: 1.5,
+                    ),
                   ),
                 ),
               ),
