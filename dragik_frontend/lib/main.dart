@@ -1,70 +1,49 @@
 import 'dart:convert';
 
 import 'package:dragik_frontend/models.dart';
+import 'package:dragik_frontend/settings.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-void main() {
-  runApp(const MyApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  final settingsProvider = SettingsProvider();
+  await settingsProvider.loadSettings();
+
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => settingsProvider,
+      child: const MyApp(),
+    ),
+  );
 }
 
-class MyApp extends StatefulWidget {
+class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
-  State<MyApp> createState() => _MyAppState();
-}
-
-class _MyAppState extends State<MyApp> {
-  ThemeMode _themeMode = ThemeMode.system;
-  double _fontSize = 18.0;
-
-  void _changeTheme(ThemeMode mode) {
-    setState(() {
-      _themeMode = mode;
-    });
-  }
-
-  void _changeFontSize(double size) {
-    setState(() {
-      _fontSize = size;
-    });
-  }
-
-  // This widget is the root of your application.
-  @override
   Widget build(BuildContext context) {
+    final settings = context.watch<SettingsProvider>();
+
     return MaterialApp(
       title: 'Читалка по ДРАГОМОЩЕНКО БАЗА',
-      themeMode: _themeMode,
+      themeMode: settings.themeMode,
       theme: ThemeData.light(),
       darkTheme: ThemeData.dark(),
-      home: MyHomePage(
-        currentThemeMode: _themeMode,
-        currentFontSize: _fontSize,
-        onThemeChanged: _changeTheme,
-        onFontSizeChanged: _changeFontSize,
-      ),
+      home: MyHomePage(),
     );
   }
 }
 
 class MySettingsPage extends StatelessWidget {
-  final ThemeMode currentThemeMode;
-  final double currentFontSize;
-  final Function(ThemeMode) onThemeChanged;
-  final Function(double) onFontSizeChanged;
-
-  const MySettingsPage({
-    super.key,
-    required this.currentThemeMode,
-    required this.currentFontSize,
-    required this.onThemeChanged,
-    required this.onFontSizeChanged,
-  });
+  const MySettingsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final settings = context.watch<SettingsProvider>();
+
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
       body: ListView(
@@ -74,9 +53,9 @@ class MySettingsPage extends StatelessWidget {
           ListTile(
             title: const Text('Выбор темы'),
             trailing: DropdownButton(
-              value: currentThemeMode,
+              value: settings.themeMode,
               onChanged: (val) {
-                if (val != null) onThemeChanged(val);
+                if (val != null) settings.setTheme(val);
               },
               items: const [
                 DropdownMenuItem(
@@ -101,15 +80,31 @@ class MySettingsPage extends StatelessWidget {
               const Icon(Icons.text_fields, size: 16),
               Expanded(
                 child: Slider(
-                  value: currentFontSize,
+                  value: settings.fontSize,
                   min: 12,
                   max: 40,
                   divisions: 14,
-                  label: currentFontSize.round().toString(),
-                  onChanged: onFontSizeChanged,
+                  label: settings.fontSize.round().toString(),
+                  onChanged: settings.setFontSize,
                 ),
               ),
               const Icon(Icons.text_fields, size: 30),
+            ],
+          ),
+          Row(
+            children: [
+              const Icon(Icons.height, size: 16),
+              Expanded(
+                child: Slider(
+                  value: settings.fontHeight,
+                  min: 0.8,
+                  max: 2.0,
+                  divisions: 12,
+                  label: settings.fontHeight.toString(),
+                  onChanged: settings.setFontHeight,
+                ),
+              ),
+              const Icon(Icons.height, size: 30),
             ],
           ),
         ],
@@ -119,18 +114,7 @@ class MySettingsPage extends StatelessWidget {
 }
 
 class MyHomePage extends StatefulWidget {
-  final ThemeMode currentThemeMode;
-  final double currentFontSize;
-  final Function(ThemeMode) onThemeChanged;
-  final Function(double) onFontSizeChanged;
-
-  const MyHomePage({
-    super.key,
-    required this.currentThemeMode,
-    required this.currentFontSize,
-    required this.onThemeChanged,
-    required this.onFontSizeChanged,
-  });
+  const MyHomePage({super.key});
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
@@ -237,6 +221,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final settings = context.watch<SettingsProvider>();
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
@@ -247,14 +233,7 @@ class _MyHomePageState extends State<MyHomePage> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => MySettingsPage(
-                    currentThemeMode: widget.currentThemeMode,
-                    currentFontSize: widget.currentFontSize,
-                    onThemeChanged: widget.onThemeChanged,
-                    onFontSizeChanged: widget.onFontSizeChanged,
-                  ),
-                ),
+                MaterialPageRoute(builder: (context) => MySettingsPage()),
               );
             },
           ),
@@ -280,7 +259,7 @@ class _MyHomePageState extends State<MyHomePage> {
         child: _currentTitle == null
             ? Text(
                 'PICK SOME TITLE',
-                style: TextStyle(fontSize: widget.currentFontSize * 2),
+                style: TextStyle(fontSize: settings.fontSize * 2),
               )
             : SingleChildScrollView(
                 controller: _scrollController,
@@ -289,8 +268,8 @@ class _MyHomePageState extends State<MyHomePage> {
                   child: Text(
                     _currentTitle!.text,
                     style: TextStyle(
-                      fontSize: widget.currentFontSize,
-                      height: 1.5,
+                      fontSize: settings.fontSize,
+                      height: settings.fontHeight,
                     ),
                   ),
                 ),
