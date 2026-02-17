@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:dragik_frontend/models.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   runApp(const MyApp());
@@ -140,11 +141,52 @@ class _MyHomePageState extends State<MyHomePage> {
 
   List<Book> _books = [];
   ContentItem? _currentTitle;
+  String? _currentBookTitle;
+  SharedPreferences? _prefs;
 
   @override
   initState() {
     super.initState();
     _loadBookFromJson();
+    _initPrefs();
+
+    _scrollController.addListener(_saveScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_saveScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  String _getStorageKey() {
+    return 'scroll_${_currentBookTitle}_${_currentTitle?.title}';
+  }
+
+  void _saveScroll() {
+    if (_currentTitle != null && _prefs != null) {
+      _prefs?.setDouble(_getStorageKey(), _scrollController.offset);
+    }
+  }
+
+  void _loadScroll() {
+    if (_currentTitle != null && _prefs != null) {
+      double savedOffset = _prefs!.getDouble(_getStorageKey()) ?? 0.0;
+      WidgetsBinding.instance.addPostFrameCallback((s) {
+        if (_scrollController.hasClients) {
+          _scrollController.animateTo(
+            savedOffset,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+          );
+        }
+      });
+    }
+  }
+
+  Future<void> _initPrefs() async {
+    _prefs = await SharedPreferences.getInstance();
   }
 
   Future<void> _loadBookFromJson() async {
@@ -176,12 +218,15 @@ class _MyHomePageState extends State<MyHomePage> {
           return ListTile(
             title: Text(ci.title),
             onTap: () {
+              _saveScroll();
+
               setState(() {
                 _currentTitle = ci;
+                _currentBookTitle = b.title;
               });
-              if (_scrollController.hasClients) {
-                _scrollController.jumpTo(0);
-              }
+
+              _loadScroll();
+
               Navigator.pop(context);
             },
           );
