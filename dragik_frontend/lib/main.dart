@@ -221,7 +221,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final settings = context.watch<SettingsProvider>();
+    final settings = context.read<SettingsProvider>();
 
     return Scaffold(
       appBar: AppBar(
@@ -237,14 +237,6 @@ class _MyHomePageState extends State<MyHomePage> {
               );
             },
           ),
-          // PopupMenuButton(
-          //   onSelected: widget.onThemeChanged,
-          //   itemBuilder: (context) => [
-          //     const PopupMenuItem(value: true, child: Text('Dark')),
-          //     const PopupMenuItem(value: false, child: Text('Light')),
-          //     const PopupMenuItem(value: null, child: Text('System')),
-          //   ],
-          // ),
         ],
       ),
       drawer: Drawer(
