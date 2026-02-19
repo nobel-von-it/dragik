@@ -200,7 +200,15 @@ class _MyHomePageState extends State<MyHomePage> {
         title: Text(b.title),
         children: b.items.map((ci) {
           return ListTile(
-            title: Text(ci.title),
+            title: ci.read
+                ? Row(
+                    children: [
+                      Icon(Icons.check),
+                      Divider(indent: 5.0),
+                      Expanded(child: Text(ci.title)),
+                    ],
+                  )
+                : Text(ci.title),
             onTap: () {
               _saveScroll();
 
@@ -212,6 +220,11 @@ class _MyHomePageState extends State<MyHomePage> {
               _loadScroll();
 
               Navigator.pop(context);
+            },
+            onLongPress: () {
+              setState(() {
+                ci.read = !ci.read;
+              });
             },
           );
         }).toList(),

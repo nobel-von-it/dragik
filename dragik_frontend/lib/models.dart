@@ -16,6 +16,7 @@ class Book {
 class ContentItem {
   final String title;
   final String text;
+  bool read = false;
 
   ContentItem({required this.title, required this.text});
 
