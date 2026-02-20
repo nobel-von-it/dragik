@@ -123,7 +123,7 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   final ScrollController _scrollController = ScrollController();
 
-  List<Book> _books = [];
+  List<Author> _authors = [];
   ContentItem? _currentTitle;
   String? _currentBookTitle;
   SharedPreferences? _prefs;
@@ -180,52 +180,57 @@ class _MyHomePageState extends State<MyHomePage> {
 
     final jsonMap = json.decode(jsonString) as Map<String, dynamic>;
 
-    final jsonBooks = jsonMap['books'] as List<dynamic>;
-    final books = jsonBooks.map((b) {
-      return Book.fromJson(b as Map<String, dynamic>);
-    }).toList();
+    // read dir with all json assets
+    final author = Author.fromJson(jsonMap);
+    // do it in loop but now is constant
+    final authors = [author];
 
     // books.forEach((b) {
     //   print(b.title);
     // });
 
     setState(() {
-      _books = books;
+      _authors = authors;
     });
   }
 
   List<ExpansionTile> _prepareExpansionTiles() {
-    return _books.map((b) {
+    return _authors.map((a) {
       return ExpansionTile(
-        title: Text(b.title),
-        children: b.items.map((ci) {
-          return ListTile(
-            title: ci.read
-                ? Row(
-                    children: [
-                      Icon(Icons.check),
-                      Divider(indent: 5.0),
-                      Expanded(child: Text(ci.title)),
-                    ],
-                  )
-                : Text(ci.title),
-            onTap: () {
-              _saveScroll();
+        title: Text(a.fio),
+        children: a.books.map((b) {
+          return ExpansionTile(
+            title: Text(b.title),
+            children: b.items.map((ci) {
+              return ListTile(
+                title: ci.read
+                    ? Row(
+                        children: [
+                          Icon(Icons.check),
+                          Divider(indent: 5.0),
+                          Expanded(child: Text(ci.title)),
+                        ],
+                      )
+                    : Text(ci.title),
+                onTap: () {
+                  _saveScroll();
 
-              setState(() {
-                _currentTitle = ci;
-                _currentBookTitle = b.title;
-              });
+                  setState(() {
+                    _currentTitle = ci;
+                    _currentBookTitle = b.title;
+                  });
 
-              _loadScroll();
+                  _loadScroll();
 
-              Navigator.pop(context);
-            },
-            onLongPress: () {
-              setState(() {
-                ci.read = !ci.read;
-              });
-            },
+                  Navigator.pop(context);
+                },
+                onLongPress: () {
+                  setState(() {
+                    ci.read = !ci.read;
+                  });
+                },
+              );
+            }).toList(),
           );
         }).toList(),
       );

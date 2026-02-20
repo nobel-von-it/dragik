@@ -1,3 +1,18 @@
+class Author {
+  final String fio;
+  final List<Book> books;
+
+  Author({required this.fio, required this.books});
+
+  factory Author.fromJson(Map<String, dynamic> json) {
+    var list = json['books'] as List;
+    return Author(
+      fio: json['fio'],
+      books: list.map((i) => Book.fromJson(i)).toList(),
+    );
+  }
+}
+
 class Book {
   final String title;
   final List<ContentItem> items;
