@@ -28,7 +28,7 @@ class MyApp extends StatelessWidget {
     final settings = context.watch<SettingsProvider>();
 
     return MaterialApp(
-      title: 'Читалка по ДРАГОМОЩЕНКО БАЗА',
+      title: 'СОВРЕМЕННАЯ БАЗА',
       themeMode: settings.themeMode,
       theme: ThemeData.light(),
       darkTheme: ThemeData.dark(),
@@ -173,17 +173,22 @@ class _MyHomePageState extends State<MyHomePage> {
     _prefs = await SharedPreferences.getInstance();
   }
 
-  Future<void> _loadBookFromJson() async {
+  Future<Author> _loadAuthor(String jsonName) async {
     String jsonString = await DefaultAssetBundle.of(
       context,
-    ).loadString("assets/dragomoshchenko.json");
-
+    ).loadString("assets/" + jsonName + ".json");
     final jsonMap = json.decode(jsonString) as Map<String, dynamic>;
-
-    // read dir with all json assets
     final author = Author.fromJson(jsonMap);
+    return author;
+  }
+
+  Future<void> _loadBookFromJson() async {
+    // read dir with all json assets
     // do it in loop but now is constant
-    final authors = [author];
+    final authors = [
+      await _loadAuthor("dragomoshchenko"),
+      await _loadAuthor("aigi"),
+    ];
 
     // books.forEach((b) {
     //   print(b.title);
