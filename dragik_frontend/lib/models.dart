@@ -39,3 +39,16 @@ class ContentItem {
     return ContentItem(title: json['item_title'], text: json['text']);
   }
 }
+
+class RecentContentItem {
+  final String bookTitle;
+  final String title;
+  final String text;
+  bool read = false;
+
+  RecentContentItem({
+    required this.bookTitle,
+    required this.title,
+    required this.text,
+  });
+}

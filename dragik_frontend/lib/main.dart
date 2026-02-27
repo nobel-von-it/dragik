@@ -126,6 +126,8 @@ class _MyHomePageState extends State<MyHomePage> {
   List<Author> _authors = [];
   ContentItem? _currentTitle;
   String? _currentBookTitle;
+  List<RecentContentItem>? _recentItems;
+
   SharedPreferences? _prefs;
 
   @override
@@ -158,7 +160,7 @@ class _MyHomePageState extends State<MyHomePage> {
     if (_currentTitle != null && _prefs != null) {
       double savedOffset = _prefs!.getDouble(_getStorageKey()) ?? 0.0;
       WidgetsBinding.instance.addPostFrameCallback((s) {
-        if (_scrollController.hasClients) {
+        if (mounted && _scrollController.hasClients) {
           _scrollController.animateTo(
             savedOffset,
             duration: const Duration(milliseconds: 300),
@@ -199,6 +201,65 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  ListTile _prepareTileWithBook(ContentItem ci, String bookTitle) {
+    return ListTile(
+      title: ci.read
+          ? Row(
+              children: [
+                Icon(Icons.check),
+                Divider(indent: 5.0),
+                Expanded(child: Text(ci.title)),
+              ],
+            )
+          : Text(ci.title),
+      onTap: () {
+        if (_currentTitle != null) {
+          _saveScroll();
+        }
+
+        setState(() {
+          _currentTitle = ci;
+          _currentBookTitle = bookTitle;
+          RecentContentItem rci = RecentContentItem(
+            bookTitle: bookTitle,
+            title: ci.title,
+            text: ci.text,
+          );
+          if (_recentItems == null) {
+            _recentItems = [rci];
+          } else {
+            bool dupl =
+                _recentItems?.any(
+                  (i) => i.bookTitle == rci.bookTitle && i.title == rci.title,
+                ) ??
+                false;
+            if (!dupl) {
+              _recentItems!.add(rci);
+            }
+          }
+        });
+
+        _loadScroll();
+
+        if (Navigator.of(context).canPop()) {
+          Navigator.pop(context);
+        }
+      },
+      onLongPress: () {
+        setState(() {
+          ci.read = !ci.read;
+        });
+      },
+    );
+  }
+
+  List<ListTile> _prepareRecent() {
+    return _recentItems!.map((rci) {
+      ContentItem ci = ContentItem(title: rci.title, text: rci.text);
+      return _prepareTileWithBook(ci, rci.bookTitle);
+    }).toList();
+  }
+
   List<ExpansionTile> _prepareExpansionTiles() {
     return _authors.map((a) {
       return ExpansionTile(
@@ -207,34 +268,7 @@ class _MyHomePageState extends State<MyHomePage> {
           return ExpansionTile(
             title: Text(b.title),
             children: b.items.map((ci) {
-              return ListTile(
-                title: ci.read
-                    ? Row(
-                        children: [
-                          Icon(Icons.check),
-                          Divider(indent: 5.0),
-                          Expanded(child: Text(ci.title)),
-                        ],
-                      )
-                    : Text(ci.title),
-                onTap: () {
-                  _saveScroll();
-
-                  setState(() {
-                    _currentTitle = ci;
-                    _currentBookTitle = b.title;
-                  });
-
-                  _loadScroll();
-
-                  Navigator.pop(context);
-                },
-                onLongPress: () {
-                  setState(() {
-                    ci.read = !ci.read;
-                  });
-                },
-              );
+              return _prepareTileWithBook(ci, b.title);
             }).toList(),
           );
         }).toList(),
@@ -251,6 +285,14 @@ class _MyHomePageState extends State<MyHomePage> {
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: const Text('Аркадий ДРАГОМОЩЕНКО'),
         actions: [
+          IconButton(
+            icon: Icon(Icons.back_hand),
+            onPressed: () {
+              setState(() {
+                _currentTitle = null;
+              });
+            },
+          ),
           IconButton(
             icon: Icon(Icons.settings),
             onPressed: () {
@@ -272,9 +314,29 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       body: Center(
         child: _currentTitle == null
-            ? Text(
-                'PICK SOME TITLE',
-                style: TextStyle(fontSize: settings.fontSize * 2),
+            ?
+              // RENDER RECENT TITLES
+              Column(
+                children: [
+                  Text(
+                    'PICK SOME TITLE',
+                    style: TextStyle(fontSize: settings.fontSize * 2),
+                  ),
+                  Expanded(
+                    child: _recentItems == null
+                        ? Text('Не был произведен ни один открытий')
+                        : Drawer(
+                            child: ListView(
+                              children: [
+                                DrawerHeader(
+                                  child: Text('Последние открытые тайтлы'),
+                                ),
+                                ..._prepareRecent(),
+                              ],
+                            ),
+                          ),
+                  ),
+                ],
               )
             : SingleChildScrollView(
                 controller: _scrollController,
