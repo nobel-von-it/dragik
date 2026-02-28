@@ -190,6 +190,7 @@ class _MyHomePageState extends State<MyHomePage> {
     final authors = [
       await _loadAuthor("dragomoshchenko"),
       await _loadAuthor("aigi"),
+      await _loadAuthor("sosnora"),
     ];
 
     // books.forEach((b) {
