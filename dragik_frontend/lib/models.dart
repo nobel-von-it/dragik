@@ -51,4 +51,13 @@ class RecentContentItem {
     required this.title,
     required this.text,
   });
+
+  factory RecentContentItem.fromStr(String s) {
+    var sp = s.split('^');
+    return RecentContentItem(bookTitle: sp[0], title: sp[1], text: sp[2]);
+  }
+
+  String toStr() {
+    return '$bookTitle^$title^$text';
+  }
 }

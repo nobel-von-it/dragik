@@ -171,6 +171,14 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
+  void _loadRecent() {
+    var recentItems = _prefs?.getStringList('recent_items')?.map((ri) {
+      return RecentContentItem.fromStr(ri);
+    }).toList();
+
+    _recentItems = recentItems;
+  }
+
   Future<void> _initPrefs() async {
     _prefs = await SharedPreferences.getInstance();
   }
@@ -229,14 +237,20 @@ class _MyHomePageState extends State<MyHomePage> {
           if (_recentItems == null) {
             _recentItems = [rci];
           } else {
-            bool dupl =
-                _recentItems?.any(
-                  (i) => i.bookTitle == rci.bookTitle && i.title == rci.title,
-                ) ??
-                false;
-            if (!dupl) {
-              _recentItems!.add(rci);
+            _recentItems?.removeWhere(
+              (i) => i.title == rci.title && i.bookTitle == rci.bookTitle,
+            );
+            _recentItems?.insert(0, rci);
+            if (_recentItems!.length > 10) {
+              _recentItems = _recentItems!.sublist(0, 10);
             }
+          }
+
+          if (_recentItems != null) {
+            _prefs?.setStringList(
+              'recent_items',
+              _recentItems!.map((rci) => rci.toStr()).toList(),
+            );
           }
         });
 
@@ -279,6 +293,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    _loadRecent();
     final settings = context.read<SettingsProvider>();
 
     return Scaffold(
